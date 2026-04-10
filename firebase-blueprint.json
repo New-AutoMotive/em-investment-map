@@ -1,0 +1,57 @@
+{
+  "entities": {
+    "CountryStats": {
+      "title": "Country Stats",
+      "description": "Key statistics and textual information for a European country.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ISO 3166-1 alpha-3 country code." },
+        "name": { "type": "string", "description": "Common name of the country." },
+        "chargingDensity": { "type": "number", "description": "Density of public charging infrastructure (e.g., chargers per 100km of road)." },
+        "evMarketShare": { "type": "number", "description": "Market share of electric vehicles (percentage)." },
+        "description": { "type": "string", "description": "Textual information about the country's EV transition." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp." }
+      },
+      "required": ["id", "name", "chargingDensity"]
+    },
+    "ManufacturingSite": {
+      "title": "Manufacturing Site",
+      "description": "A key site in the battery or EV manufacturing sector.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "description": "Name of the facility or company." },
+        "type": { "type": "string", "enum": ["battery", "ev"], "description": "Type of manufacturing site." },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          },
+          "required": ["lat", "lng"]
+        },
+        "countryId": { "type": "string", "description": "ISO 3166-1 alpha-3 country code." },
+        "city": { "type": "string", "description": "The city where the site is located." },
+        "description": { "type": "string", "description": "Brief details about the site." },
+        "manufacturer": { "type": "string", "description": "The company operating the site." },
+        "produces": { "type": "string", "description": "What the site produces (e.g., cars, batteries)." },
+        "brands": { "type": "string", "description": "Brands associated with the site." },
+        "evConversionPlans": { "type": "string", "description": "Details about plans to convert to EV production." },
+        "investmentAmount": { "type": "string", "description": "Amount of investment in the site." },
+        "source": { "type": "string", "description": "Source of the information." },
+        "sourceUrl": { "type": "string", "description": "URL to the source of information." }
+      },
+      "required": ["id", "name", "type", "location", "countryId"]
+    }
+  },
+  "firestore": {
+    "/countries": {
+      "schema": "CountryStats",
+      "description": "Collection of country-level statistics."
+    },
+    "/sites": {
+      "schema": "ManufacturingSite",
+      "description": "Collection of manufacturing sites."
+    }
+  }
+}

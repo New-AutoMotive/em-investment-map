@@ -1,0 +1,39 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "ben@newautomotive.org" && request.auth.token.email_verified == true));
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // Country Stats
+    match /countries/{countryId} {
+      allow read: if true; // Publicly readable for the map
+      allow write: if isAdmin();
+    }
+
+    // Manufacturing Sites
+    match /sites/{siteId} {
+      allow read: if true; // Publicly readable for the map
+      allow write: if isAdmin();
+    }
+
+    // User profiles (for roles)
+    match /users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if isAdmin();
+    }
+  }
+}

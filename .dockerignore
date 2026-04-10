@@ -1,0 +1,30 @@
+# Dependencies (will be reinstalled in the build stage)
+node_modules/
+
+# Previous build output (rebuilt in Docker)
+dist/
+
+# Database tooling — not needed in the app container
+database/
+
+# Git history
+.git/
+.gitignore
+
+# Editor / OS noise
+.DS_Store
+*.swp
+*.swo
+.vscode/
+
+# Firebase credentials (service account keys — never ship these)
+firebase-credentials.json
+*-credentials.json
+*-service-account.json
+
+# Studio result files
+studio_results_*.json
+
+# Local env files
+.env
+.env.*

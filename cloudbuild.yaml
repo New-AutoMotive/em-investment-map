@@ -1,0 +1,62 @@
+# Cloud Build CI/CD pipeline
+# Triggered on every push to the `main` branch.
+# 1. Builds the Docker image
+# 2. Pushes it to Artifact Registry
+# 3. Deploys to Cloud Run (europe-west2)
+
+substitutions:
+  _REGION: europe-west2
+  _SERVICE: em-investment-map
+  _REPO: em-investment-map  # Artifact Registry repository name
+
+steps:
+  # ── Build Docker image ───────────────────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: build
+    args:
+      - build
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$COMMIT_SHA'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:latest'
+      - '.'
+
+  # ── Push to Artifact Registry ────────────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: push
+    args:
+      - push
+      - '--all-tags'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}'
+
+  # ── Deploy to Cloud Run ──────────────────────────────────────────────────────
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: deploy
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - '${_SERVICE}'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$COMMIT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - managed
+      - '--allow-unauthenticated'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '10'
+      - '--memory'
+      - '256Mi'
+      - '--cpu'
+      - '1'
+
+# Store the built images in Artifact Registry
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$COMMIT_SHA'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

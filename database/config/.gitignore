@@ -1,0 +1,6 @@
+# Firebase service account credentials
+firebase-credentials.json
+
+# Never commit private keys or secrets
+*.json
+!.gitignore

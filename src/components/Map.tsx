@@ -193,9 +193,11 @@ export const Map: React.FC<MapProps> = ({
         g.attr('transform', event.transform);
         // Keep site dots at a constant screen size regardless of zoom level
         const k = event.transform.k;
-        g.selectAll('circle.site').attr('r', function() {
-          return parseFloat((this as SVGCircleElement).getAttribute('data-base-r') || '5') / k;
-        });
+        g.selectAll('circle.site')
+          .attr('r', function() {
+            return parseFloat((this as SVGCircleElement).getAttribute('data-base-r') || '5') / k;
+          })
+          .attr('stroke-width', 1.5 / k);
       });
 
     zoomRef.current = zoom;

@@ -189,7 +189,14 @@ export const Map: React.FC<MapProps> = ({
 
     const zoom = d3.zoom()
       .scaleExtent([1, 8])
-      .on('zoom', (event) => { g.attr('transform', event.transform); });
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform);
+        // Keep site dots at a constant screen size regardless of zoom level
+        const k = event.transform.k;
+        g.selectAll('circle.site').attr('r', function() {
+          return parseFloat((this as SVGCircleElement).getAttribute('data-base-r') || '5') / k;
+        });
+      });
 
     zoomRef.current = zoom;
     svg.call(zoom as any);
@@ -274,10 +281,10 @@ export const Map: React.FC<MapProps> = ({
       return '#f97316';
     };
 
-    // Slightly larger dots for better touch targets on mobile
+    // Base radii — kept intentionally small; zoom-invariant scaling prevents them growing on zoom
     const getSiteRadius = (d: ManufacturingSite): number => {
-      if (d.type === 'ev') return 5;
-      return (d.subtype || '').toLowerCase().includes('gigafactor') ? 8 : 6;
+      if (d.type === 'ev') return 4;
+      return (d.subtype || '').toLowerCase().includes('gigafactor') ? 6 : 5;
     };
 
     g.selectAll('circle.site')
@@ -288,6 +295,7 @@ export const Map: React.FC<MapProps> = ({
       .attr('cx', (d: any) => refs.projection([(d as ManufacturingSite).location.lng, (d as ManufacturingSite).location.lat])?.[0] || 0)
       .attr('cy', (d: any) => refs.projection([(d as ManufacturingSite).location.lng, (d as ManufacturingSite).location.lat])?.[1] || 0)
       .attr('r', (d: any) => getSiteRadius(d as ManufacturingSite))
+      .attr('data-base-r', (d: any) => getSiteRadius(d as ManufacturingSite))
       .attr('fill', (d: any) => getSiteFill(d as ManufacturingSite))
       .attr('stroke', '#fff')
       .attr('stroke-width', 1.5)

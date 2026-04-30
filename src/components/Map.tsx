@@ -27,8 +27,8 @@ const SECTOR_PALETTE = [
   '#f59e0b', '#06b6d4', '#ec4899', '#84cc16', '#14b8a6',
 ];
 
-// Chargepoint manufacturing site colour - sky blue, distinct from battery/EV palettes
-const CHARGEPOINT_COLOUR = '#0ea5e9';
+// Chargepoint manufacturing site colour - E-Mobility Europe brand mid blue
+const CHARGEPOINT_COLOUR = '#009FDA';
 
 const EUROSTAT_TO_ISO3: Record<string, string> = {
   'AT': 'AUT', 'BE': 'BEL', 'BG': 'BGR', 'HR': 'HRV', 'CY': 'CYP',
@@ -215,7 +215,7 @@ export const Map: React.FC<MapProps> = ({
     g.selectAll('path.country')
       .attr('fill', (d: any) => {
         if (!ACTIVE_PROJECT_CODES.includes(d.id)) return '#e2e8f0';
-        return selectedCountryId === d.id ? '#10b981' : '#ffffff';
+        return selectedCountryId === d.id ? '#3B0083' : '#ffffff';
       })
       .attr('class', (d: any) => {
         const isActive = ACTIVE_PROJECT_CODES.includes(d.id);

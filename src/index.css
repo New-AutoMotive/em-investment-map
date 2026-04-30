@@ -1,1 +1,19 @@
 @import "tailwindcss";
+
+@theme {
+  /* E-Mobility Europe brand typefaces */
+  --font-sans: "Cabinet Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Familjen Grotesk", ui-sans-serif, system-ui, sans-serif;
+
+  /* E-Mobility Europe brand colours */
+  --color-brand-violet: #3b0083;
+  --color-brand-violet-mid: #8966b5;
+  --color-brand-violet-light: #c4b2da;
+  --color-brand-violet-pale: #ebe5f3;
+  --color-brand-lime: #d2fd0f;
+  --color-brand-lime-light: #edfe9f;
+  --color-brand-blue: #009fda;
+  --color-brand-blue-mid: #59c1e7;
+  --color-brand-blue-light: #99d9f0;
+  --color-brand-blue-pale: #e5f5fb;
+}

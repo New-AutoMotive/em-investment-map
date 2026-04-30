@@ -297,7 +297,8 @@ export default function App() {
       {loading && countries.length === 0 && (
         <div className="fixed inset-0 bg-slate-50 z-[100] flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+            {/* Brand violet spinner */}
+            <div className="w-12 h-12 border-4 border-[#3B0083]/20 border-t-[#3B0083] rounded-full animate-spin" />
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest animate-pulse">Initializing Map Data</p>
           </div>
         </div>
@@ -327,13 +328,14 @@ interface LayerButtonProps {
   label: string;
 }
 
+// Brand violet (#3B0083) for active state
 const LayerButton: React.FC<LayerButtonProps> = ({ active, onClick, icon, label }) => (
   <button
     onClick={onClick}
     className={cn(
       "flex items-center gap-3 px-4 py-2.5 rounded-full border transition-all shadow-sm text-xs font-medium",
       active
-        ? "bg-slate-900 border-slate-900 text-white shadow-slate-900/20"
+        ? "bg-[#3B0083] border-[#3B0083] text-white shadow-[#3B0083]/20"
         : "bg-white/80 backdrop-blur-sm border-slate-200 text-slate-600 hover:bg-white"
     )}
   >
@@ -356,7 +358,7 @@ const MobileLayerButton: React.FC<MobileLayerButtonProps> = ({ active, onClick, 
     className={cn(
       "flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-xl border text-[10px] font-semibold transition-all",
       active
-        ? "bg-slate-900 border-slate-900 text-white"
+        ? "bg-[#3B0083] border-[#3B0083] text-white"
         : "bg-white border-slate-200 text-slate-500"
     )}
   >

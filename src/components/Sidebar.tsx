@@ -4,8 +4,8 @@ import { X, Zap, Factory, Battery, TrendingUp, MapPin, Euro, Recycle, CalendarDa
 import { cn } from '../utils';
 import { CountryStats, ManufacturingSite, NUTS2Region } from '../types';
 
-// Chargepoint manufacturing site colour - must match Map.tsx
-const CHARGEPOINT_COLOUR = '#0ea5e9';
+// Chargepoint manufacturing site colour - E-Mobility Europe brand mid blue (must match Map.tsx)
+const CHARGEPOINT_COLOUR = '#009FDA';
 
 // Subtype label helpers
 const SUBTYPE_LABELS: Record<string, string> = {
@@ -477,26 +477,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                   {/* Headline: manufacturing footprint */}
                   {(countryBatteryStats || countryEvStats || countryChargepointStats) && (
-                    <div className="bg-slate-900 text-white rounded-3xl p-6">
+                    <div className="bg-[#3B0083] text-white rounded-3xl p-6">
                       <div className="flex items-center gap-2 mb-3">
-                        <BarChart3 className="w-4 h-4 text-slate-400" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">E-Mobility Footprint</span>
+                        <BarChart3 className="w-4 h-4 text-[#c4b2da]" />
+                        <span className="text-[10px] font-bold text-[#c4b2da] uppercase tracking-[0.2em]">E-Mobility Footprint</span>
                       </div>
                       <div className="text-4xl font-mono font-bold text-white">
                         {totalManufacturingSites}
                       </div>
-                      <div className="text-sm text-slate-300 mt-1">
+                      <div className="text-sm text-white/80 mt-1">
                         manufacturing {totalManufacturingSites === 1 ? 'site' : 'sites'} tracked
                       </div>
                       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
                         {countryBatteryStats && (
-                          <span className="text-[10px] text-slate-400">{countryBatteryStats.siteCount} battery</span>
+                          <span className="text-[10px] text-[#c4b2da]">{countryBatteryStats.siteCount} battery</span>
                         )}
                         {countryEvStats && (
-                          <span className="text-[10px] text-slate-400">{countryEvStats.siteCount} EV</span>
+                          <span className="text-[10px] text-[#c4b2da]">{countryEvStats.siteCount} EV</span>
                         )}
                         {countryChargepointStats && (
-                          <span className="text-[10px] text-slate-400">{countryChargepointStats.siteCount} charge point mfg</span>
+                          <span className="text-[10px] text-[#c4b2da]">{countryChargepointStats.siteCount} charge point mfg</span>
                         )}
                       </div>
                     </div>

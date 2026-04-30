@@ -6,8 +6,11 @@ vite-debug.log*
 # Build output
 dist/
 
-# Python virtual environment
+# Python virtual environment & compiled bytecode
 database/venv/
+__pycache__/
+*.pyc
+*.pyo
 
 # Firebase service account credentials — NEVER commit
 database/config/firebase-credentials.json

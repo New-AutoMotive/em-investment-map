@@ -1,0 +1,20 @@
+# Inherit all rules from .gitignore
+#!include:.gitignore
+
+# Also exclude for Cloud Build uploads (not needed for Docker image build):
+
+# Git history
+.git/
+
+# All Python tooling — not part of the frontend Docker build
+database/
+
+# GeoJSON data files are served from public/ at runtime (already in Docker)
+# and the database Python scripts are not needed in the build context
+
+# Markdown docs
+*.md
+
+# Brand / working documents
+Brand Book V2b April_25 with Fonts.pdf
+Charging Sector Data - Manufacturing sites.csv

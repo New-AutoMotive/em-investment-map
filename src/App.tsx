@@ -11,8 +11,6 @@ import { AboutModal } from './components/AboutModal';
 import { Zap, Factory, Battery, HelpCircle, Info, Plug } from 'lucide-react';
 import { cn } from './utils';
 
-
-
 export default function App() {
   const [countries, setCountries] = useState<CountryStats[]>([]);
   const [sites, setSites] = useState<ManufacturingSite[]>([]);
@@ -35,7 +33,6 @@ export default function App() {
       setSites(snapshot.docs.map(doc => doc.data() as ManufacturingSite));
     });
 
-    // Load NUTS2 regions from GeoJSON
     fetch('/nuts2_investment.geojson')
       .then(res => res.json())
       .then(data => {
@@ -60,7 +57,6 @@ export default function App() {
     );
   };
 
-  // ISO3->ISO2 mapping (stable - defined once outside renders)
   const ISO3_TO_ISO2: Record<string, string> = {
     'DEU': 'DE', 'FRA': 'FR', 'ESP': 'ES', 'ITA': 'IT', 'POL': 'PL',
     'NLD': 'NL', 'BEL': 'BE', 'CZE': 'CZ', 'GRC': 'EL', 'PRT': 'PT',
@@ -71,7 +67,6 @@ export default function App() {
     'LIE': 'LI'
   };
 
-  // Memoised: only recomputes when selectedCountryId or source data changes
   const selectedCountry = useMemo(() =>
     countries.find(c => c.id === selectedCountryId) || (selectedCountryId ? {
       id: selectedCountryId,
@@ -148,7 +143,6 @@ export default function App() {
     return { siteCount: cpSites.length, topManufacturers };
   }, [selectedCountryId, sites]);
 
-  // Stable callbacks - prevent Map's useEffect from re-running on every render
   const handleCountrySelect = useCallback((id: string | null) => {
     setSelectedCountryId(id);
     if (id) { setSelectedSiteId(null); setSelectedRegionId(null); }
@@ -171,72 +165,90 @@ export default function App() {
   }, []);
 
   return (
-    <div className="flex h-screen w-screen bg-slate-50 overflow-hidden font-sans text-slate-900">
-      {/* Main Content */}
-      <main className="flex-1 relative flex flex-col">
-        {/* Header */}
-        <header className="absolute top-0 left-0 w-full px-4 sm:px-8 py-4 sm:py-8 z-10 pointer-events-none flex justify-between items-start">
-          <div className="pointer-events-auto">
-            <h1 className="text-2xl sm:text-4xl font-serif italic tracking-tight text-slate-900 mb-0.5 sm:mb-1 leading-tight">
-              EU E-Mobility<br className="sm:hidden" /> Investment Map
+    <div className="flex h-screen w-screen overflow-hidden font-sans text-slate-900">
+      {/* ── Main content column ────────────────────────────────────── */}
+      <main className="flex-1 flex flex-col min-w-0">
+
+        {/* ── Brand header strip ─────────────────────────────────── */}
+        <header className="flex-shrink-0 bg-[#3B0083] h-14 sm:h-[72px] flex items-center px-4 sm:px-6 gap-3 sm:gap-5 z-20 shadow-md">
+
+          {/* E-Mobility Europe logo — violet frame disappears, lime bolt + white text float */}
+          <img
+            src="/RGB Primary logo EME.svg"
+            alt="E-Mobility Europe"
+            className="h-8 sm:h-11 w-auto flex-shrink-0"
+          />
+
+          {/* Divider */}
+          <div className="w-px h-7 sm:h-9 bg-white/25 flex-shrink-0" />
+
+          {/* New AutoMotive logo — white/gradient version for dark backgrounds */}
+          <img
+            src="/NA_LOGO_WHITE_GRADIENT_HQ-SVG.svg"
+            alt="New AutoMotive"
+            className="h-5 sm:h-7 w-auto flex-shrink-0"
+          />
+
+          {/* Map title — hidden on mobile (too cramped) */}
+          <div className="hidden sm:block flex-1 pl-4 border-l border-white/20 ml-1 min-w-0">
+            <h1 className="text-base sm:text-lg font-serif italic text-white leading-tight tracking-tight truncate">
+              EU E-Mobility Investment Map
             </h1>
-            {/* Subtitle - hidden on mobile to save space */}
-            <p className="hidden sm:block text-xs font-semibold text-slate-400 uppercase tracking-widest">
+            <p className="text-[9px] font-semibold text-[#c4b2da] uppercase tracking-widest mt-0.5">
               Track the growth of Europe's multi-billion e-mobility industry
             </p>
-            {/* Help + About links */}
-            <div className="mt-2 sm:mt-3 flex items-center gap-3">
-              <button
-                onClick={() => { resetWelcome(); setShowWelcome(true); }}
-                className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-colors"
-              >
-                <HelpCircle className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">How to use this map</span>
-              </button>
-              <span className="hidden sm:inline text-slate-200">·</span>
-              <button
-                onClick={() => setShowAbout(true)}
-                className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-colors"
-              >
-                <Info className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">About the data</span>
-              </button>
-            </div>
           </div>
 
-          {/* Layer Controls - desktop only; mobile uses bottom bar */}
-          <div className="hidden sm:flex flex-col items-end gap-4 pointer-events-auto">
-            <div className="flex flex-col gap-2">
-              <LayerButton
-                active={activeLayers.includes('investment')}
-                onClick={() => toggleLayer('investment')}
-                icon={<Zap className="w-4 h-4" />}
-                label="Public Charging"
-              />
-              <LayerButton
-                active={activeLayers.includes('battery')}
-                onClick={() => toggleLayer('battery')}
-                icon={<Battery className="w-4 h-4" />}
-                label="Battery Manufacturing"
-              />
-              <LayerButton
-                active={activeLayers.includes('ev')}
-                onClick={() => toggleLayer('ev')}
-                icon={<Factory className="w-4 h-4" />}
-                label="EV Manufacturing"
-              />
-              <LayerButton
-                active={activeLayers.includes('chargepoint')}
-                onClick={() => toggleLayer('chargepoint')}
-                icon={<Plug className="w-4 h-4" />}
-                label="Charge Point Manufacturing"
-              />
-            </div>
+          {/* Help + About — desktop only, pushed to far right */}
+          <div className="hidden sm:flex items-center gap-3 ml-auto flex-shrink-0">
+            <button
+              onClick={() => { resetWelcome(); setShowWelcome(true); }}
+              className="flex items-center gap-1.5 text-[10px] font-semibold text-[#c4b2da] hover:text-white uppercase tracking-widest transition-colors"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>How to use</span>
+            </button>
+            <span className="text-white/20 text-sm">·</span>
+            <button
+              onClick={() => setShowAbout(true)}
+              className="flex items-center gap-1.5 text-[10px] font-semibold text-[#c4b2da] hover:text-white uppercase tracking-widest transition-colors"
+            >
+              <Info className="w-3.5 h-3.5" />
+              <span>About the data</span>
+            </button>
           </div>
         </header>
 
-        {/* Map Container */}
-        <div className="flex-1">
+        {/* ── Map + floating layer toggles ───────────────────────── */}
+        <div className="flex-1 relative overflow-hidden">
+          {/* Layer controls float over map — desktop only */}
+          <div className="hidden sm:flex absolute top-6 right-6 z-10 flex-col gap-2 pointer-events-auto">
+            <LayerButton
+              active={activeLayers.includes('investment')}
+              onClick={() => toggleLayer('investment')}
+              icon={<Zap className="w-4 h-4" />}
+              label="Public Charging"
+            />
+            <LayerButton
+              active={activeLayers.includes('battery')}
+              onClick={() => toggleLayer('battery')}
+              icon={<Battery className="w-4 h-4" />}
+              label="Battery Manufacturing"
+            />
+            <LayerButton
+              active={activeLayers.includes('ev')}
+              onClick={() => toggleLayer('ev')}
+              icon={<Factory className="w-4 h-4" />}
+              label="EV Manufacturing"
+            />
+            <LayerButton
+              active={activeLayers.includes('chargepoint')}
+              onClick={() => toggleLayer('chargepoint')}
+              icon={<Plug className="w-4 h-4" />}
+              label="Charge Point Manufacturing"
+            />
+          </div>
+
           <Map
             countries={countries}
             sites={sites}
@@ -249,11 +261,9 @@ export default function App() {
             onRegionSelect={handleRegionSelect}
           />
         </div>
-
-
       </main>
 
-      {/* Sidebar */}
+      {/* ── Sidebar ────────────────────────────────────────────────── */}
       <Sidebar
         country={selectedCountry}
         site={selectedSite}
@@ -265,7 +275,7 @@ export default function App() {
         onClose={handleSidebarClose}
       />
 
-      {/* Mobile Layer Bar - fixed bottom, visible on small screens only */}
+      {/* ── Mobile layer bar ───────────────────────────────────────── */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 z-20 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-2 flex gap-2 safe-bottom">
         <MobileLayerButton
           active={activeLayers.includes('investment')}
@@ -293,25 +303,22 @@ export default function App() {
         />
       </div>
 
-      {/* Loading Overlay */}
+      {/* ── Loading overlay ────────────────────────────────────────── */}
       {loading && countries.length === 0 && (
         <div className="fixed inset-0 bg-slate-50 z-[100] flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            {/* Brand violet spinner */}
             <div className="w-12 h-12 border-4 border-[#3B0083]/20 border-t-[#3B0083] rounded-full animate-spin" />
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest animate-pulse">Initializing Map Data</p>
           </div>
         </div>
       )}
 
-      {/* Welcome Modal */}
+      {/* ── Modals ─────────────────────────────────────────────────── */}
       <AnimatePresence>
         {showWelcome && (
           <WelcomeModal onClose={() => setShowWelcome(false)} />
         )}
       </AnimatePresence>
-
-      {/* About / Data Provenance Modal */}
       <AnimatePresence>
         {showAbout && (
           <AboutModal onClose={() => setShowAbout(false)} />
@@ -321,6 +328,8 @@ export default function App() {
   );
 }
 
+// ── Layer buttons ─────────────────────────────────────────────────────────────
+
 interface LayerButtonProps {
   active: boolean;
   onClick: () => void;
@@ -328,7 +337,6 @@ interface LayerButtonProps {
   label: string;
 }
 
-// Brand violet (#3B0083) for active state
 const LayerButton: React.FC<LayerButtonProps> = ({ active, onClick, icon, label }) => (
   <button
     onClick={onClick}
@@ -344,7 +352,6 @@ const LayerButton: React.FC<LayerButtonProps> = ({ active, onClick, icon, label 
   </button>
 );
 
-// Mobile bottom-bar layer button - full-width flex pill
 interface MobileLayerButtonProps {
   active: boolean;
   onClick: () => void;

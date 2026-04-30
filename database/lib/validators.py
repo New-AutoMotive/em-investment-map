@@ -35,7 +35,7 @@ class ManufacturingSite(BaseModel):
     id: str = Field(..., min_length=1, description="Unique site identifier")
     name: str = Field(..., min_length=1, description="Site name")
     countryId: str = Field(..., min_length=3, max_length=3, description="ISO 3166-1 alpha-3 country code")
-    type: Literal['battery', 'ev'] = Field(..., description="Site type: battery or ev")
+    type: Literal['battery', 'ev', 'chargepoint'] = Field(..., description="Site type: battery, ev, or chargepoint")
     manufacturer: str = Field(..., min_length=1, description="Manufacturer/company name")
     location: Location = Field(..., description="Geographic coordinates")
     

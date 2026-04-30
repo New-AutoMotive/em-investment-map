@@ -10,7 +10,7 @@ export interface CountryStats {
 export interface ManufacturingSite {
   id: string;
   name: string;
-  type: 'battery' | 'ev';
+  type: 'battery' | 'ev' | 'chargepoint';
   /** Battery plant subtype, sourced from Cloud SQL `projects.type` */
   subtype?: 'gigafactory' | 'recycling' | 'pack-assembly' | 'r-d-pilot' | string;
   location: {
@@ -62,7 +62,7 @@ export interface NUTS2Region {
   geometry: any;
 }
 
-export type MapLayer = 'charging' | 'battery' | 'ev' | 'investment';
+export type MapLayer = 'charging' | 'battery' | 'ev' | 'investment' | 'chargepoint';
 
 export interface FirestoreErrorInfo {
   error: string;

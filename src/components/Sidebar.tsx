@@ -1,10 +1,13 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Zap, Factory, Battery, TrendingUp, MapPin, Euro, Recycle, CalendarDays, Users, FlaskConical, Globe, BarChart3 } from 'lucide-react';
+import { X, Zap, Factory, Battery, TrendingUp, MapPin, Euro, Recycle, CalendarDays, Users, FlaskConical, Globe, BarChart3, Plug } from 'lucide-react';
 import { cn } from '../utils';
 import { CountryStats, ManufacturingSite, NUTS2Region } from '../types';
 
-// ── Subtype label helpers ────────────────────────────────────────────────────
+// Chargepoint manufacturing site colour - must match Map.tsx
+const CHARGEPOINT_COLOUR = '#0ea5e9';
+
+// Subtype label helpers
 const SUBTYPE_LABELS: Record<string, string> = {
   gigafactory: 'Gigafactory',
   recycling: 'Recycling Plant',
@@ -23,7 +26,7 @@ const subtypeColor = (raw?: string) => {
   return 'bg-slate-100 text-slate-600';
 };
 
-// ── Battery Site Content ─────────────────────────────────────────────────────
+// Battery Site Content
 const BatterySiteContent: React.FC<{ site: ManufacturingSite }> = ({ site }) => (
   <div className="space-y-8">
     {/* Subtype badge */}
@@ -44,7 +47,7 @@ const BatterySiteContent: React.FC<{ site: ManufacturingSite }> = ({ site }) => 
         </div>
       )}
 
-      {/* Capacity — current & 2030 side by side if both present */}
+      {/* Capacity - current & 2030 side by side if both present */}
       {(site.capacityGwh || site.capacityGwh2030) && (
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
@@ -191,11 +194,37 @@ const BatterySiteContent: React.FC<{ site: ManufacturingSite }> = ({ site }) => 
         </div>
       </div>
     )}
-
   </div>
 );
 
-// ── Main Sidebar ─────────────────────────────────────────────────────────────
+// Charge Point Manufacturing Site Content
+const ChargepointSiteContent: React.FC<{ site: ManufacturingSite }> = ({ site }) => (
+  <div className="space-y-8">
+    <div className="grid grid-cols-1 gap-6">
+      {site.manufacturer && (
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] block mb-2">Manufacturer</span>
+          <div className="text-xl font-medium text-slate-900">{site.manufacturer}</div>
+        </div>
+      )}
+      {site.produces && (
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] block mb-2">Products</span>
+          <div className="text-lg text-slate-700 leading-relaxed">{site.produces}</div>
+        </div>
+      )}
+    </div>
+    {/* Economic status / overview from evConversionPlans field */}
+    {site.evConversionPlans && (
+      <div>
+        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Status & Developments</h3>
+        <p className="text-slate-600 leading-relaxed font-sans">{site.evConversionPlans}</p>
+      </div>
+    )}
+  </div>
+);
+
+// Main Sidebar
 interface SidebarProps {
   country: CountryStats | null;
   site: ManufacturingSite | null;
@@ -216,23 +245,55 @@ interface SidebarProps {
     topManufacturers: string[];
     produces: string[];
   } | null;
+  countryChargepointStats: {
+    siteCount: number;
+    topManufacturers: string[];
+  } | null;
   onClose: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   country, site, region,
-  countryChargingStats, countryBatteryStats, countryEvStats,
+  countryChargingStats, countryBatteryStats, countryEvStats, countryChargepointStats,
   onClose
 }) => {
   const activeItem = country || site || region;
   const isSite = !!site;
   const isRegion = !!region;
 
+  // Dot colour for site header
+  const siteDotStyle = isSite
+    ? site.type === 'chargepoint'
+      ? { backgroundColor: CHARGEPOINT_COLOUR }
+      : undefined
+    : undefined;
+
+  const siteDotClass = isSite
+    ? site.type === 'battery'
+      ? 'bg-orange-500'
+      : site.type === 'chargepoint'
+        ? ''  // use inline style
+        : 'bg-indigo-500'
+    : '';
+
+  const siteTypeLabel = isSite
+    ? site.type === 'battery'
+      ? 'Battery Plant'
+      : site.type === 'chargepoint'
+        ? 'Charge Point Manufacturing'
+        : 'EV Assembly'
+    : '';
+
+  const totalManufacturingSites =
+    (countryBatteryStats?.siteCount ?? 0) +
+    (countryEvStats?.siteCount ?? 0) +
+    (countryChargepointStats?.siteCount ?? 0);
+
   return (
     <AnimatePresence>
       {activeItem && (
         <motion.div
-          key={activeItem.id}
+          key={(activeItem as any).id ?? (activeItem as any).nutsId}
           initial={{ x: '100%' }}
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
@@ -244,12 +305,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="flex-1 pr-4">
                 {isSite && (
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <div className={cn(
-                      "w-2.5 h-2.5 rounded-full flex-shrink-0",
-                      site.type === 'battery' ? "bg-orange-500" : "bg-indigo-500"
-                    )} />
+                    <div
+                      className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', siteDotClass)}
+                      style={siteDotStyle}
+                    />
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                      {site.type === 'battery' ? 'Battery Plant' : 'EV Assembly'}
+                      {siteTypeLabel}
                     </span>
                     {site.type === 'battery' && site.sector && (
                       <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
@@ -279,10 +340,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="space-y-10">
               {isSite ? (
                 site.type === 'battery' ? (
-                  /* ── BATTERY SITE ── */
+                  /* BATTERY SITE */
                   <BatterySiteContent site={site} />
+                ) : site.type === 'chargepoint' ? (
+                  /* CHARGE POINT MANUFACTURING SITE */
+                  <ChargepointSiteContent site={site} />
                 ) : (
-                  /* ── EV ASSEMBLY SITE ── */
+                  /* EV ASSEMBLY SITE */
                   <div className="space-y-8">
                     <div className="grid grid-cols-1 gap-6">
                       {site.manufacturer && (
@@ -358,7 +422,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           <>
                             €{(region!.investmentDensity / 1_000).toFixed(0)}K
                             <span className="text-sm font-normal text-slate-400 ml-2">/km²</span>
-                            <div className="text-xs text-orange-500 mt-2">⚠️ Area data may need recalculation</div>
+                            <div className="text-xs text-orange-500 mt-2">Area data may need recalculation</div>
                           </>
                         ) : (
                           <>
@@ -408,23 +472,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                 </div>
               ) : (
-                /* ── COUNTRY PANEL ── */
+                /* COUNTRY PANEL */
                 <div className="space-y-8">
 
                   {/* Headline: manufacturing footprint */}
-                  {(countryBatteryStats || countryEvStats) && (
+                  {(countryBatteryStats || countryEvStats || countryChargepointStats) && (
                     <div className="bg-slate-900 text-white rounded-3xl p-6">
                       <div className="flex items-center gap-2 mb-3">
                         <BarChart3 className="w-4 h-4 text-slate-400" />
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">E-Mobility Footprint</span>
                       </div>
                       <div className="text-4xl font-mono font-bold text-white">
-                        {(countryBatteryStats?.siteCount ?? 0) + (countryEvStats?.siteCount ?? 0)}
+                        {totalManufacturingSites}
                       </div>
                       <div className="text-sm text-slate-300 mt-1">
-                        manufacturing {(countryBatteryStats?.siteCount ?? 0) + (countryEvStats?.siteCount ?? 0) === 1 ? 'site' : 'sites'} tracked
-                        {countryBatteryStats && countryEvStats && (
-                          <span className="text-slate-400"> — {countryBatteryStats.siteCount} battery · {countryEvStats.siteCount} EV</span>
+                        manufacturing {totalManufacturingSites === 1 ? 'site' : 'sites'} tracked
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                        {countryBatteryStats && (
+                          <span className="text-[10px] text-slate-400">{countryBatteryStats.siteCount} battery</span>
+                        )}
+                        {countryEvStats && (
+                          <span className="text-[10px] text-slate-400">{countryEvStats.siteCount} EV</span>
+                        )}
+                        {countryChargepointStats && (
+                          <span className="text-[10px] text-slate-400">{countryChargepointStats.siteCount} charge point mfg</span>
                         )}
                       </div>
                     </div>
@@ -502,6 +574,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                   )}
 
+                  {/* Charge Point Manufacturing */}
+                  {countryChargepointStats && (
+                    <div>
+                      <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <Plug className="w-3.5 h-3.5" /> Charge Point Manufacturing
+                      </h3>
+                      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                        <div className="p-5 border-b border-slate-50">
+                          <div className="text-2xl font-mono font-semibold text-slate-900">{countryChargepointStats.siteCount}</div>
+                          <div className="text-xs text-slate-400 mt-0.5">
+                            {countryChargepointStats.siteCount === 1 ? 'manufacturer' : 'manufacturers'} tracked
+                          </div>
+                        </div>
+                        {countryChargepointStats.topManufacturers.length > 0 && (
+                          <div className="p-5">
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-3">Companies</div>
+                            <div className="flex flex-col gap-2">
+                              {countryChargepointStats.topManufacturers.map(m => (
+                                <div key={m} className="text-sm text-slate-700 font-medium">{m}</div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Public Charging */}
                   {countryChargingStats && countryChargingStats.totalChargepoints > 0 && (
                     <div>
@@ -537,7 +636,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   )}
 
                   {/* No data fallback */}
-                  {!countryBatteryStats && !countryEvStats && !countryChargingStats && (
+                  {!countryBatteryStats && !countryEvStats && !countryChargepointStats && !countryChargingStats && (
                     <p className="text-sm text-slate-400 italic">
                       No detailed data available for this country yet. Enable the layer toggles to explore available data.
                     </p>

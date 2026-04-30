@@ -21,11 +21,14 @@ const ACTIVE_PROJECT_CODES = [
   'POL', 'PRT', 'ROU', 'SVK', 'SVN', 'ESP', 'SWE', 'ISL', 'LIE', 'NOR', 'CHE'
 ];
 
-// Fixed sector colour palette — 10 distinct colours that cycle if > 10 sectors
+// Fixed sector colour palette - 10 distinct colours that cycle if > 10 sectors
 const SECTOR_PALETTE = [
   '#f97316', '#3b82f6', '#10b981', '#8b5cf6', '#ef4444',
   '#f59e0b', '#06b6d4', '#ec4899', '#84cc16', '#14b8a6',
 ];
+
+// Chargepoint manufacturing site colour - sky blue, distinct from battery/EV palettes
+const CHARGEPOINT_COLOUR = '#0ea5e9';
 
 const EUROSTAT_TO_ISO3: Record<string, string> = {
   'AT': 'AUT', 'BE': 'BEL', 'BG': 'BGR', 'HR': 'HRV', 'CY': 'CYP',
@@ -57,12 +60,12 @@ export const Map: React.FC<MapProps> = ({
   const projectionRef = useRef<{ projection: any; path: any } | null>(null);
   const zoomRef = useRef<any>(null);
 
-  // Ref for selectedCountryId used in D3 click handlers — avoids stale closures
+  // Ref for selectedCountryId used in D3 click handlers - avoids stale closures
   // without adding selectedCountryId to Effect 1's dependency array
   const selectedCountryIdRef = useRef<string | null>(selectedCountryId);
   useEffect(() => { selectedCountryIdRef.current = selectedCountryId; }, [selectedCountryId]);
 
-  // ── Load geo data + handle resize ──────────────────────────────────────────
+  // Load geo data + handle resize
   useEffect(() => {
     fetch('/NUTS_RG_01M_2024_4326.geojson')
       .then(res => res.json())
@@ -118,7 +121,7 @@ export const Map: React.FC<MapProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // ── Derived: colour scales ──────────────────────────────────────────────────
+  // Derived: colour scales
   const colorScale = useMemo(() => {
     const maxDensity = d3.max(countries, (d: CountryStats) => d.chargingDensity) || 100;
     return d3.scaleSequential(d3.interpolateYlGnBu).domain([0, maxDensity]);
@@ -128,7 +131,6 @@ export const Map: React.FC<MapProps> = ({
     if (nuts2Regions.length === 0) return null;
     const values = nuts2Regions.filter(r => r.investmentDensity > 0).map(r => r.investmentDensity).sort((a, b) => a - b);
     if (values.length === 0) return null;
-    // values is sorted ascending — last element is max
     const maxVal = values[values.length - 1] || 1000;
     return d3.scaleSequentialLog(d3.interpolateYlOrRd).domain([Math.max(values[0], 0.1), maxVal]);
   }, [nuts2Regions]);
@@ -142,7 +144,7 @@ export const Map: React.FC<MapProps> = ({
     return map;
   }, [sites]);
 
-  // ── Effect 1: Base map ──────────────────────────────────────────────────────
+  // Effect 1: Base map
   // Runs ONLY when geographic data or viewport changes.
   // Rebuilds SVG structure, projection, country shapes, and zoom.
   useEffect(() => {
@@ -182,7 +184,6 @@ export const Map: React.FC<MapProps> = ({
       .on('click', (event, d: any) => {
         event.stopPropagation();
         if (ACTIVE_PROJECT_CODES.includes(d.id)) {
-          // Use ref to avoid stale closure (Effect 1 doesn't re-run on selectedCountryId changes)
           onCountrySelect(selectedCountryIdRef.current === d.id ? null : d.id);
         }
       });
@@ -204,11 +205,9 @@ export const Map: React.FC<MapProps> = ({
     svg.call(zoom as any);
 
   }, [topoData, dimensions, onCountrySelect]);
-  // ↑ selectedCountryId intentionally excluded — fills handled by Effect 2
 
-  // ── Effect 2: Country selection highlight ───────────────────────────────────
-  // Fast — only updates fill/class on existing paths. No geometry work.
-  // Triggered independently when the user clicks a country.
+  // Effect 2: Country selection highlight
+  // Fast - only updates fill/class on existing paths.
   useEffect(() => {
     const g = gRef.current;
     if (!g) return;
@@ -228,10 +227,8 @@ export const Map: React.FC<MapProps> = ({
         );
       });
   }, [selectedCountryId, topoData, dimensions]);
-  // ↑ topoData/dimensions ensure this runs after Effect 1 when the base map changes
 
-  // ── Effect 3: NUTS2 investment layer ────────────────────────────────────────
-  // Redraws only the NUTS2 overlay. Triggered by layer toggle or data changes.
+  // Effect 3: NUTS2 investment layer
   useEffect(() => {
     const g = gRef.current;
     const refs = projectionRef.current;
@@ -263,7 +260,7 @@ export const Map: React.FC<MapProps> = ({
 
   }, [topoData, dimensions, activeLayers, nuts2Regions, investmentColorScale, selectedRegionId, onRegionSelect]);
 
-  // ── Effect 4: Manufacturing sites layer ─────────────────────────────────────
+  // Effect 4: Manufacturing sites layer
   // Redraws only site circles. Triggered by layer toggle or data changes.
   useEffect(() => {
     const g = gRef.current;
@@ -272,19 +269,28 @@ export const Map: React.FC<MapProps> = ({
 
     g.selectAll('circle.site').remove();
 
-    if (!activeLayers.includes('battery') && !activeLayers.includes('ev')) return;
+    const anyManufacturingActive =
+      activeLayers.includes('battery') ||
+      activeLayers.includes('ev') ||
+      activeLayers.includes('chargepoint');
 
-    const filteredSites = sites.filter(s => activeLayers.includes(s.type));
+    if (!anyManufacturingActive) return;
+
+    const filteredSites = sites.filter(s =>
+      activeLayers.includes(s.type as MapLayer)
+    );
 
     const getSiteFill = (d: ManufacturingSite): string => {
+      if (d.type === 'chargepoint') return CHARGEPOINT_COLOUR;
       if (d.type === 'ev') return '#6366f1';
       const sector = d.sector;
       if (sector && sector in sectorColorMap) return sectorColorMap[sector];
       return '#f97316';
     };
 
-    // Base radii — kept intentionally small; zoom-invariant scaling prevents them growing on zoom
+    // Base radii - kept intentionally small; zoom-invariant scaling prevents them growing on zoom
     const getSiteRadius = (d: ManufacturingSite): number => {
+      if (d.type === 'chargepoint') return 4;
       if (d.type === 'ev') return 4;
       return (d.subtype || '').toLowerCase().includes('gigafactor') ? 6 : 5;
     };
@@ -318,7 +324,7 @@ export const Map: React.FC<MapProps> = ({
 
   }, [topoData, dimensions, activeLayers, sites, sectorColorMap, onSiteSelect]);
 
-  // ── Zoom reset ─────────────────────────────────────────────────────────────
+  // Zoom reset
   const resetZoom = () => {
     if (svgRef.current && zoomRef.current) {
       d3.select(svgRef.current)
@@ -326,6 +332,20 @@ export const Map: React.FC<MapProps> = ({
         .duration(750)
         .call(zoomRef.current.transform, d3.zoomIdentity);
     }
+  };
+
+  // Helper: tooltip type label
+  const getSiteTypeLabel = (site: ManufacturingSite): string => {
+    if (site.type === 'battery') return 'Battery Plant';
+    if (site.type === 'chargepoint') return 'Charge Point Manufacturer';
+    return 'EV Assembly';
+  };
+
+  // Helper: tooltip dot colour class
+  const getSiteDotColour = (site: ManufacturingSite): string => {
+    if (site.type === 'battery') return 'bg-orange-500';
+    if (site.type === 'chargepoint') return 'bg-sky-500';
+    return 'bg-indigo-500';
   };
 
   return (
@@ -336,7 +356,7 @@ export const Map: React.FC<MapProps> = ({
         viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
       />
 
-      {/* Zoom Controls — raised above mobile bottom bar */}
+      {/* Zoom Controls - raised above mobile bottom bar */}
       <div className="absolute bottom-20 right-4 sm:bottom-8 sm:right-8 flex flex-col gap-2 pointer-events-auto">
         <button
           onClick={resetZoom}
@@ -350,7 +370,7 @@ export const Map: React.FC<MapProps> = ({
         </button>
       </div>
 
-      {/* Legends — raised above mobile bottom bar on small screens */}
+      {/* Legends - raised above mobile bottom bar on small screens */}
       <div className="absolute bottom-20 left-4 sm:bottom-8 sm:left-8 flex flex-col gap-3">
         {activeLayers.includes('investment') && (
           <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -364,7 +384,7 @@ export const Map: React.FC<MapProps> = ({
           </div>
         )}
 
-        {(activeLayers.includes('battery') || activeLayers.includes('ev')) && (
+        {(activeLayers.includes('battery') || activeLayers.includes('ev') || activeLayers.includes('chargepoint')) && (
           <div className="flex flex-col gap-2">
             {activeLayers.includes('battery') && Object.keys(sectorColorMap).length > 0 && (
               <div className="bg-white/80 backdrop-blur-sm px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
@@ -392,6 +412,12 @@ export const Map: React.FC<MapProps> = ({
                 <span className="text-xs font-medium text-slate-600">EV Manufacturing</span>
               </div>
             )}
+            {activeLayers.includes('chargepoint') && (
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CHARGEPOINT_COLOUR }} />
+                <span className="text-xs font-medium text-slate-600">Charge Point Manufacturing</span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -403,10 +429,7 @@ export const Map: React.FC<MapProps> = ({
           style={{ left: hoveredSite.x + 15, top: hoveredSite.y - 15, transform: 'translateY(-50%)' }}
         >
           <div className="flex items-center gap-2 mb-2">
-            <div className={cn(
-              "w-2.5 h-2.5 rounded-full",
-              hoveredSite.site.type === 'battery' ? "bg-orange-500" : "bg-indigo-500"
-            )} />
+            <div className={cn('w-2.5 h-2.5 rounded-full', getSiteDotColour(hoveredSite.site))} />
             <h4 className="text-base font-bold tracking-tight">{hoveredSite.site.name}</h4>
           </div>
           <div className="space-y-3">
@@ -431,7 +454,7 @@ export const Map: React.FC<MapProps> = ({
           </div>
           <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center">
             <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">
-              {hoveredSite.site.type === 'battery' ? 'Battery Plant' : 'EV Assembly'}
+              {getSiteTypeLabel(hoveredSite.site)}
             </span>
             <span className="text-[9px] font-bold text-slate-400">{hoveredSite.site.countryId}</span>
           </div>

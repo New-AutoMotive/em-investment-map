@@ -8,7 +8,7 @@ import { Map } from './components/Map';
 import { Sidebar } from './components/Sidebar';
 import { WelcomeModal, shouldShowWelcome, resetWelcome } from './components/WelcomeModal';
 import { AboutModal } from './components/AboutModal';
-import { Zap, Factory, Battery, HelpCircle, Info } from 'lucide-react';
+import { Zap, Factory, Battery, HelpCircle, Info, Plug } from 'lucide-react';
 import { cn } from './utils';
 
 
@@ -55,12 +55,12 @@ export default function App() {
   }, []);
 
   const toggleLayer = (layer: MapLayer) => {
-    setActiveLayers(prev => 
+    setActiveLayers(prev =>
       prev.includes(layer) ? prev.filter(l => l !== layer) : [...prev, layer]
     );
   };
 
-  // ISO3→ISO2 mapping (stable — defined once outside renders)
+  // ISO3->ISO2 mapping (stable - defined once outside renders)
   const ISO3_TO_ISO2: Record<string, string> = {
     'DEU': 'DE', 'FRA': 'FR', 'ESP': 'ES', 'ITA': 'IT', 'POL': 'PL',
     'NLD': 'NL', 'BEL': 'BE', 'CZE': 'CZ', 'GRC': 'EL', 'PRT': 'PT',
@@ -138,7 +138,17 @@ export default function App() {
     return { siteCount: evSites.length, topManufacturers, produces: [...prod] };
   }, [selectedCountryId, sites]);
 
-  // Stable callbacks — prevent Map's useEffect from re-running on every render
+  const countryChargepointStats = useMemo(() => {
+    if (!selectedCountryId) return null;
+    const cpSites = sites.filter(s => s.type === 'chargepoint' && s.countryId === selectedCountryId);
+    if (cpSites.length === 0) return null;
+    const mfg: Record<string, number> = {};
+    cpSites.forEach(s => { if (s.manufacturer) mfg[s.manufacturer] = (mfg[s.manufacturer] || 0) + 1; });
+    const topManufacturers = Object.entries(mfg).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([n]) => n);
+    return { siteCount: cpSites.length, topManufacturers };
+  }, [selectedCountryId, sites]);
+
+  // Stable callbacks - prevent Map's useEffect from re-running on every render
   const handleCountrySelect = useCallback((id: string | null) => {
     setSelectedCountryId(id);
     if (id) { setSelectedSiteId(null); setSelectedRegionId(null); }
@@ -170,7 +180,7 @@ export default function App() {
             <h1 className="text-2xl sm:text-4xl font-serif italic tracking-tight text-slate-900 mb-0.5 sm:mb-1 leading-tight">
               EU E-Mobility<br className="sm:hidden" /> Investment Map
             </h1>
-            {/* Subtitle — hidden on mobile to save space */}
+            {/* Subtitle - hidden on mobile to save space */}
             <p className="hidden sm:block text-xs font-semibold text-slate-400 uppercase tracking-widest">
               Track the growth of Europe's multi-billion e-mobility industry
             </p>
@@ -194,7 +204,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Layer Controls — desktop only; mobile uses bottom bar */}
+          {/* Layer Controls - desktop only; mobile uses bottom bar */}
           <div className="hidden sm:flex flex-col items-end gap-4 pointer-events-auto">
             <div className="flex flex-col gap-2">
               <LayerButton
@@ -214,6 +224,12 @@ export default function App() {
                 onClick={() => toggleLayer('ev')}
                 icon={<Factory className="w-4 h-4" />}
                 label="EV Manufacturing"
+              />
+              <LayerButton
+                active={activeLayers.includes('chargepoint')}
+                onClick={() => toggleLayer('chargepoint')}
+                icon={<Plug className="w-4 h-4" />}
+                label="Charge Point Manufacturing"
               />
             </div>
           </div>
@@ -245,10 +261,11 @@ export default function App() {
         countryChargingStats={countryChargingStats}
         countryBatteryStats={countryBatteryStats}
         countryEvStats={countryEvStats}
+        countryChargepointStats={countryChargepointStats}
         onClose={handleSidebarClose}
       />
 
-      {/* Mobile Layer Bar — fixed bottom, visible on small screens only */}
+      {/* Mobile Layer Bar - fixed bottom, visible on small screens only */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 z-20 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-2 flex gap-2 safe-bottom">
         <MobileLayerButton
           active={activeLayers.includes('investment')}
@@ -267,6 +284,12 @@ export default function App() {
           onClick={() => toggleLayer('ev')}
           icon={<Factory className="w-4 h-4" />}
           label="EV"
+        />
+        <MobileLayerButton
+          active={activeLayers.includes('chargepoint')}
+          onClick={() => toggleLayer('chargepoint')}
+          icon={<Plug className="w-4 h-4" />}
+          label="CP Mfg"
         />
       </div>
 
@@ -309,8 +332,8 @@ const LayerButton: React.FC<LayerButtonProps> = ({ active, onClick, icon, label 
     onClick={onClick}
     className={cn(
       "flex items-center gap-3 px-4 py-2.5 rounded-full border transition-all shadow-sm text-xs font-medium",
-      active 
-        ? "bg-slate-900 border-slate-900 text-white shadow-slate-900/20" 
+      active
+        ? "bg-slate-900 border-slate-900 text-white shadow-slate-900/20"
         : "bg-white/80 backdrop-blur-sm border-slate-200 text-slate-600 hover:bg-white"
     )}
   >
@@ -319,7 +342,7 @@ const LayerButton: React.FC<LayerButtonProps> = ({ active, onClick, icon, label 
   </button>
 );
 
-// Mobile bottom-bar layer button — full-width flex pill
+// Mobile bottom-bar layer button - full-width flex pill
 interface MobileLayerButtonProps {
   active: boolean;
   onClick: () => void;

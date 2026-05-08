@@ -324,13 +324,31 @@ export const Map: React.FC<MapProps> = ({
 
   }, [topoData, dimensions, activeLayers, sites, sectorColorMap, onSiteSelect]);
 
-  // Zoom reset
+  // Zoom controls
   const resetZoom = () => {
     if (svgRef.current && zoomRef.current) {
       d3.select(svgRef.current)
         .transition()
         .duration(750)
         .call(zoomRef.current.transform, d3.zoomIdentity);
+    }
+  };
+
+  const zoomIn = () => {
+    if (svgRef.current && zoomRef.current) {
+      d3.select(svgRef.current)
+        .transition()
+        .duration(300)
+        .call(zoomRef.current.scaleBy, 1.5);
+    }
+  };
+
+  const zoomOut = () => {
+    if (svgRef.current && zoomRef.current) {
+      d3.select(svgRef.current)
+        .transition()
+        .duration(300)
+        .call(zoomRef.current.scaleBy, 1 / 1.5);
     }
   };
 
@@ -358,6 +376,22 @@ export const Map: React.FC<MapProps> = ({
 
       {/* Zoom Controls - raised above mobile bottom bar */}
       <div className="absolute bottom-20 right-4 sm:bottom-8 sm:right-8 flex flex-col gap-2 pointer-events-auto">
+        {/* +/− zoom — desktop only */}
+        <button
+          onClick={zoomIn}
+          className="hidden sm:flex items-center justify-center bg-white/90 backdrop-blur-sm w-11 h-11 rounded-xl border border-slate-200 shadow-sm hover:bg-white transition-all text-slate-600 text-xl font-light leading-none"
+          title="Zoom In"
+        >
+          +
+        </button>
+        <button
+          onClick={zoomOut}
+          className="hidden sm:flex items-center justify-center bg-white/90 backdrop-blur-sm w-11 h-11 rounded-xl border border-slate-200 shadow-sm hover:bg-white transition-all text-slate-600 text-xl font-light leading-none"
+          title="Zoom Out"
+        >
+          −
+        </button>
+        {/* Reset view */}
         <button
           onClick={resetZoom}
           className="bg-white/90 backdrop-blur-sm p-3 rounded-xl border border-slate-200 shadow-sm hover:bg-white transition-all text-slate-600"

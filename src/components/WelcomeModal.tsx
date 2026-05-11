@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Zap, Battery, Factory, Globe, ChevronLeft, ChevronRight, Map } from 'lucide-react';
+import { X, Zap, Battery, Factory, Globe, ChevronLeft, ChevronRight, Map, Plug } from 'lucide-react';
 import { cn } from '../utils';
 
 const STORAGE_KEY = 'em-map-welcome-seen';
@@ -43,8 +43,15 @@ const CARDS: Card[] = [
     hint: 'Click any site to explore what\'s being built, by whom, and planned investment.',
   },
   {
-    icon: <Globe className="w-7 h-7 text-sky-600" />,
+    icon: <Plug className="w-7 h-7 text-[#009FDA]" />,
     iconBg: 'bg-sky-50',
+    title: 'Charge Point Manufacturing',
+    body: 'The Charge Point Manufacturing layer maps the companies building Europe\'s EV charging hardware — from major players like Siemens and ABB to specialists like Alpitronic, Kempower, and Wallbox.',
+    hint: 'Click any site to see company details and market context.',
+  },
+  {
+    icon: <Globe className="w-7 h-7 text-slate-600" />,
+    iconBg: 'bg-slate-100',
     title: 'Country Overviews',
     body: 'Click any highlighted country to pull up a summary of its EV market share, charging density, and total infrastructure investment.',
     hint: 'Layer controls are in the top-right corner. You can combine multiple layers at once.',

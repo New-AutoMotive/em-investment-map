@@ -48,7 +48,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ onClose }) => {
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] mb-3">About this map</h3>
             <p className="text-sm text-slate-600 leading-relaxed">
               The EU E-Mobility Investment Map is published by{' '}
-              <span className="font-semibold text-slate-800">[PUBLISHER NAME]</span>.
+              <span className="font-semibold text-slate-800">New AutoMotive and E-Mobility Europe</span>.
               It tracks investment and infrastructure across three pillars of Europe's e-mobility
               sector: public charging infrastructure, battery manufacturing, and electric vehicle
               assembly. All data is correct as of <span className="font-semibold text-slate-800">January 2026</span>.
@@ -136,8 +136,8 @@ export const AboutModal: React.FC<AboutModalProps> = ({ onClose }) => {
                   of January 2026. Investment figures are estimates where not publicly confirmed
                   and should be treated as indicative only. This map is for informational
                   purposes only and does not constitute investment, financial, or legal advice.
-                  [PUBLISHER NAME] accepts no liability for decisions made on the basis of
-                  information presented here.
+                  New AutoMotive and E-Mobility Europe accept no liability for decisions made
+                  on the basis of information presented here.
                 </p>
               </div>
             </div>

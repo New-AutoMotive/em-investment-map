@@ -10,6 +10,8 @@ interface MapProps {
   activeLayers: MapLayer[];
   selectedCountryId: string | null;
   selectedRegionId: string | null;
+  /** Per-country total known investment (manufacturing + charging infra). */
+  countryTotalInvestments: Record<string, { total: number; isPartial: boolean }>;
   onCountrySelect: (id: string | null) => void;
   onSiteSelect: (id: string | null) => void;
   onRegionSelect: (id: string | null) => void;
@@ -39,6 +41,22 @@ const EUROSTAT_TO_ISO3: Record<string, string> = {
   'ES': 'ESP', 'SE': 'SWE', 'IS': 'ISL', 'LI': 'LIE', 'NO': 'NOR', 'CH': 'CHE'
 };
 
+/** Formats a total investment value into a compact readable label. */
+function formatInvestmentLabel(total: number, isPartial: boolean): string {
+  let formatted: string;
+  if (total >= 1e9) {
+    const billions = total / 1e9;
+    formatted = `€${billions % 1 === 0 ? billions.toFixed(0) : billions.toFixed(1)}B`;
+  } else if (total >= 1e6) {
+    formatted = `€${Math.round(total / 1e6)}M`;
+  } else if (total >= 1e3) {
+    formatted = `€${Math.round(total / 1e3)}K`;
+  } else {
+    formatted = `€${Math.round(total)}`;
+  }
+  return isPartial ? `${formatted}+` : formatted;
+}
+
 export const Map: React.FC<MapProps> = ({
   countries,
   sites,
@@ -46,6 +64,7 @@ export const Map: React.FC<MapProps> = ({
   activeLayers,
   selectedCountryId,
   selectedRegionId,
+  countryTotalInvestments,
   onCountrySelect,
   onSiteSelect,
   onRegionSelect
@@ -199,6 +218,13 @@ export const Map: React.FC<MapProps> = ({
             return parseFloat((this as SVGCircleElement).getAttribute('data-base-r') || '5') / k;
           })
           .attr('stroke-width', 1.5 / k);
+        // Keep investment labels at a constant screen size regardless of zoom level
+        g.selectAll<SVGGElement, unknown>('g.country-investment-label')
+          .attr('transform', function() {
+            const cx = parseFloat((this as SVGGElement).getAttribute('data-cx') || '0');
+            const cy = parseFloat((this as SVGGElement).getAttribute('data-cy') || '0');
+            return `translate(${cx},${cy}) scale(${1 / k})`;
+          });
       });
 
     zoomRef.current = zoom;
@@ -323,6 +349,71 @@ export const Map: React.FC<MapProps> = ({
       });
 
   }, [topoData, dimensions, activeLayers, sites, sectorColorMap, onSiteSelect]);
+
+  // Effect 5: Country investment headline label (selected country only)
+  // Draws a compact pill label at the centroid of the selected country showing total known investment.
+  // Only renders when a country is selected and investment data is available.
+  // Labels are zoom-invariant (the zoom handler above applies an inverse scale transform).
+  useEffect(() => {
+    const g = gRef.current;
+    const refs = projectionRef.current;
+    if (!g || !refs || !topoData) return;
+
+    // Always clear previous label first
+    g.selectAll('g.country-investment-label').remove();
+
+    // Only render when a country is selected and has investment data
+    if (!selectedCountryId) return;
+    const data = countryTotalInvestments[selectedCountryId];
+    if (!data || data.total <= 0) return;
+
+    const feature = topoData.features.find((f: any) => f.id === selectedCountryId);
+    if (!feature) return;
+
+    const centroid = refs.path.centroid(feature);
+    if (!centroid || isNaN(centroid[0]) || isNaN(centroid[1])) return;
+    const [cx, cy] = centroid;
+
+    const FONT_SIZE = 11;
+    const CHAR_WIDTH = FONT_SIZE * 0.62; // monospace estimate
+    const PAD_X = 8;
+    const PAD_Y = 4;
+    const PILL_H = FONT_SIZE + PAD_Y * 2;
+
+    const label = formatInvestmentLabel(data.total, data.isPartial);
+    const pillW = Math.max(label.length * CHAR_WIDTH + PAD_X * 2, 32);
+
+    const labelGroup = g.append('g')
+      .attr('class', 'country-investment-label')
+      .attr('data-cx', cx)
+      .attr('data-cy', cy)
+      .attr('transform', `translate(${cx},${cy})`)
+      .style('pointer-events', 'none');
+
+    // Pill background — use brand violet when country is selected
+    labelGroup.append('rect')
+      .attr('x', -pillW / 2)
+      .attr('y', -PILL_H / 2)
+      .attr('width', pillW)
+      .attr('height', PILL_H)
+      .attr('rx', PILL_H / 2)
+      .attr('fill', '#3B0083')
+      .attr('stroke', 'rgba(255,255,255,0.3)')
+      .attr('stroke-width', 1)
+      .style('filter', 'drop-shadow(0 2px 4px rgba(59,0,131,0.4))');
+
+    // Investment text — white on violet
+    labelGroup.append('text')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'central')
+      .attr('font-size', FONT_SIZE)
+      .attr('font-weight', '700')
+      .attr('font-family', 'ui-monospace, SFMono-Regular, Menlo, monospace')
+      .attr('fill', '#ffffff')
+      .attr('letter-spacing', '-0.3')
+      .text(label);
+
+  }, [topoData, dimensions, selectedCountryId, countryTotalInvestments]);
 
   // Zoom controls
   const resetZoom = () => {

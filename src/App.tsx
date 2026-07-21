@@ -9,7 +9,7 @@ import { Sidebar } from './components/Sidebar';
 import { WelcomeModal, shouldShowWelcome, resetWelcome } from './components/WelcomeModal';
 import { AboutModal } from './components/AboutModal';
 import { Zap, Factory, Battery, HelpCircle, Info, Plug } from 'lucide-react';
-import { cn } from './utils';
+import { cn, parseInvestmentAmount } from './utils';
 
 export default function App() {
   const [countries, setCountries] = useState<CountryStats[]>([]);
@@ -143,6 +143,38 @@ export default function App() {
     return { siteCount: cpSites.length, topManufacturers };
   }, [selectedCountryId, sites]);
 
+  // Aggregate all known investment per country (manufacturing sites + charging infra)
+  // across ALL countries on the map — used for the headline figure labels.
+  const countryTotalInvestments = useMemo((): Record<string, { total: number; isPartial: boolean }> => {
+    const result: Record<string, { total: number; isPartial: boolean }> = {};
+
+    // Sum manufacturing site investments (battery, EV, chargepoint)
+    sites.forEach(site => {
+      const cid = site.countryId;
+      if (!result[cid]) result[cid] = { total: 0, isPartial: false };
+      const parsed = parseInvestmentAmount(site.investmentAmount);
+      if (parsed !== null) {
+        result[cid].total += parsed;
+      } else {
+        // Site exists but has no parseable investment figure → mark as partial
+        result[cid].isPartial = true;
+      }
+    });
+
+    // Add NUTS2 public charging infrastructure investment per country
+    const iso2ToIso3: Record<string, string> = Object.fromEntries(
+      Object.entries(ISO3_TO_ISO2).map(([k, v]) => [v, k])
+    );
+    nuts2Regions.forEach(region => {
+      const iso3 = iso2ToIso3[region.countryCode];
+      if (!iso3) return;
+      if (!result[iso3]) result[iso3] = { total: 0, isPartial: false };
+      result[iso3].total += region.totalInvestment;
+    });
+
+    return result;
+  }, [sites, nuts2Regions]);
+
   const handleCountrySelect = useCallback((id: string | null) => {
     setSelectedCountryId(id);
     if (id) { setSelectedSiteId(null); setSelectedRegionId(null); }
@@ -256,6 +288,7 @@ export default function App() {
             activeLayers={activeLayers}
             selectedCountryId={selectedCountryId}
             selectedRegionId={selectedRegionId}
+            countryTotalInvestments={countryTotalInvestments}
             onCountrySelect={handleCountrySelect}
             onSiteSelect={handleSiteSelect}
             onRegionSelect={handleRegionSelect}

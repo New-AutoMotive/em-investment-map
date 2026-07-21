@@ -53,8 +53,8 @@ const CARDS: Card[] = [
     icon: <Globe className="w-7 h-7 text-slate-600" />,
     iconBg: 'bg-slate-100',
     title: 'Country Overviews',
-    body: 'Click any highlighted country to pull up a summary of its EV market share, charging density, and total infrastructure investment.',
-    hint: 'Layer controls are in the top-right corner. You can combine multiple layers at once.',
+    body: 'Click any highlighted country to open a detailed summary panel. A headline investment figure — combining known manufacturing site investments and public charging infrastructure — also appears directly on the map as a label.',
+    hint: 'Figures marked with \'+\' are known minimums: some sites don\'t publicly disclose investment amounts, so the true total may be higher. Layer controls are in the top-right corner. You can combine multiple layers at once.',
   },
 ];
 
